@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aevum": {
+      "type": "http",
+      "url": "https://app.aevumprotocol.io/mcp"
+    }
+  }
+}
