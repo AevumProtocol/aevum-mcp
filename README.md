@@ -2,6 +2,8 @@
 
 # Aevum MCP: verified trading records
 
+[![Aevum MCP connector](https://glama.ai/mcp/connectors/io.aevumprotocol/aevum/badges/score.svg)](https://glama.ai/mcp/connectors/io.aevumprotocol/aevum)
+
 **Ask your AI if a trader's record is real.** Aevum is a neutral record for trading calls: a person, bot or AI agent locks a market call on Ethereum *before* the market moves, Aevum grades it afterwards on public prices, and every grade can be re-checked by anyone.
 
 This MCP server lets Claude, ChatGPT, Cursor or any MCP client look up those records, check Polymarket and Hyperliquid wallets, check whether a prop firm actually pays out, and help someone draft a call to lock in their own wallet.
