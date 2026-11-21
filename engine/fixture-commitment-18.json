@@ -1,0 +1,48 @@
+{
+  "type": "aevum-strategy-template-result-v1",
+  "commitmentId": "18",
+  "strategyHash": "0x97045a69c4e90366ac3a3c7df58d493c4350fc9df28742021614d88e8036c008",
+  "submitter": "0xbc2C6f49C34ae735a5A85cBC637b83B875d352e5",
+  "lockTs": 1794429047,
+  "windowEnd": 1795033847,
+  "priceSource": "Coinbase <SYM>-USD 1-hour candles (close of each hour)",
+  "result": "GRADED",
+  "engine": "aevum-templates-v1",
+  "spec": {
+    "v": 1,
+    "template": "momentum",
+    "assets": [
+      "BTC"
+    ],
+    "params": {
+      "fast": 12,
+      "slow": 48
+    },
+    "costBps": 25,
+    "bar": "1h"
+  },
+  "firstDecision": 1794430800,
+  "lastDecision": 1795032000,
+  "hours": 167,
+  "netReturn": -0.0292,
+  "benchmarkReturn": -0.16,
+  "excessReturn": 0.1309,
+  "maxDrawdown": -0.0303,
+  "sharpe": -12.04,
+  "trades": 2,
+  "timeInMarket": 0.1257,
+  "turnover": 4,
+  "returnBps": "-291",
+  "priceStart": [
+    74604.19
+  ],
+  "priceEnd": [
+    62664.08
+  ],
+  "note": "Strategy template: Momentum (trend following), BTC-USD. Net return -2.92% vs buy-and-hold -16.00%; max drawdown -3.03%; Sharpe -12.04; 2 trades; in the market 13% of hours. Graded by Aevum on Coinbase 1-hour candles, costs 0.25% per side, engine aevum-templates-v1. Paper test on public prices. DATA {\"type\":\"aevum-strategy-template-result-v1\",\"commitmentId\":\"18\",\"strategyHash\":\"0x97045a69c4e90366ac3a3c7df58d493c4350fc9df28742021614d88e8036c008\",\"submitter\":\"0xbc2C6f49C34ae735a5A85cBC637b83B875d352e5\",\"lockTs\":1794429047,\"windowEnd\":1795033847,\"priceSource\":\"Coinbase <SYM>-USD 1-hour candles (close of each hour)\",\"result\":\"GRADED\",\"engine\":\"aevum-templates-v1\",\"spec\":{\"v\":1,\"template\":\"momentum\",\"assets\":[\"BTC\"],\"params\":{\"fast\":12,\"slow\":48},\"costBps\":25,\"bar\":\"1h\"},\"firstDecision\":1794430800,\"lastDecision\":1795032000,\"hours\":167,\"netReturn\":-0.0292,\"benchmarkReturn\":-0.16,\"excessReturn\":0.1309,\"maxDrawdown\":-0.0303,\"sharpe\":-12.04,\"trades\":2,\"timeInMarket\":0.1257,\"turnover\":4,\"returnBps\":-291,\"priceStart\":[74604.19],\"priceEnd\":[62664.08]}",
+  "resultsHash": "0x14e850031b753f7a262ed194ad33d41a3a19810d07efe6893b4eae135313ad90",
+  "metadataURI": "https://app.aevumprotocol.io/check/0xbc2C6f49C34ae735a5A85cBC637b83B875d352e5",
+  "gradedAt": "2026-11-18T22:32:42.093Z",
+  "txHash": "0xb8de21d7a96746f9b7fd0f7b55aa8d79db7449400ec717edc2b5fa96cdd3fc76",
+  "block": 26444963
+}

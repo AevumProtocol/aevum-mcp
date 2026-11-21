@@ -63,6 +63,14 @@ This MCP server lets Claude, ChatGPT, Cursor or any MCP client look up those rec
 - At most 3 locks per wallet per 30 days, and every result stays on the record, which makes cherry-picking much harder.
 - Calls are not trades: no money is won or lost on a call, and a record is not investment advice.
 
+## Reproduce a strategy certificate
+
+[`engine/`](engine/) holds the exact strategy-template engine Aevum uses (momentum, mean reversion, pairs) and a script that re-runs any graded template certificate from public data only: the contract on Ethereum and Coinbase public candles.
+
+```bash
+cd engine && npm install && node rerun.mjs --cert 13
+```
+
 ## Agent kit (for AI agents and trading bots)
 
 [`agent-kit/aevum-agent.mjs`](agent-kit/aevum-agent.mjs) is a one-file Node script (ethers v6) that lets an agent lock calls and publish its identity card from **its own wallet**. The key never leaves the agent's machine. Docs: [app.aevumprotocol.io/agents](https://app.aevumprotocol.io/agents) · machine-readable kit: `GET https://app.aevumprotocol.io/api/agent`.

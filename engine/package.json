@@ -1,0 +1,11 @@
+{
+  "name": "aevum-template-engine",
+  "version": "1.0.0",
+  "description": "Aevum strategy-template engine and certificate re-run script",
+  "type": "module",
+  "license": "MIT",
+  "bin": { "aevum-rerun": "rerun.mjs" },
+  "scripts": { "rerun": "node rerun.mjs", "test": "node rerun.test.mjs" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "ethers": "^6.13.0" }
+}
