@@ -7,6 +7,8 @@
  *   node rerun.mjs --cert 13
  *   options: --rpc <your Ethereum mainnet RPC URL>   (or env AEVUM_RPC_URL; default: a public RPC)
  *            --json                                   (machine-readable output)
+ *            --text-file <path>                       (the exact locked text; only needed for VOID results, which carry no
+ *                                                      spec; otherwise fetched from Aevum's public lookup and hash-checked)
  *
  * What it checks, step by step (no Aevum server is used):
  *   1. Reads the commitment and certificate from the Aevum VBO v2 contract on Ethereum mainnet.
@@ -50,7 +52,7 @@ export async function coinbaseHourly(sym, start, end, fetchImpl = fetch) {
  * Core check (pure apart from the injected readers, so it can be tested offline).
  * read: { commitment(id), certificate(id) } -> contract tuples;  candles: (sym, startSec, endSec) -> Coinbase rows
  */
-export async function rerun({ commitmentId, certId, read, candles }) {
+export async function rerun({ commitmentId, certId, read, candles, lockedText }) {
   const steps = []; const add = (label, ok, detail) => { steps.push({ label, ok, detail }); return ok; };
   let cert, c;
   if (certId) { cert = await read.certificate(certId); commitmentId = Number(cert.commitmentId); }
@@ -67,15 +69,26 @@ export async function rerun({ commitmentId, certId, read, candles }) {
   const data = JSON.parse(dataRaw);
   if (data.type !== "aevum-strategy-template-result-v1") return { verdict: "error", steps, headline: `Not a strategy-template certificate (type ${data.type}).` };
 
-  const locked = composeTemplate(data.spec);
+  // The rules: rebuilt from the spec in the attested data (GRADED results carry it). VOID results don't, so the locked
+  // text is needed: --text-file, or Aevum's public locked-text lookup. Either way it must hash to the on-chain strategyHash.
+  let spec = data.spec, locked = spec ? composeTemplate(spec) : null, src = "rebuilt from the attested spec";
+  if (!locked) {
+    const t = typeof lockedText === "function" ? await lockedText(String(c.strategyHash).toLowerCase()) : lockedText;
+    if (!t) return { verdict: "error", steps, headline: "This result has no spec in its data (VOID). Pass the locked text with --text-file to check it." };
+    locked = t; spec = parseTemplate(t); src = "locked text supplied";
+  }
   const okRules = ethers.keccak256(ethers.toUtf8Bytes(locked)).toLowerCase() === String(c.strategyHash).toLowerCase() && !!parseTemplate(locked);
-  if (!add("Rules were locked before the window", okRules, okRules ? `rebuilt locked text hashes to strategyHash; locked at ${new Date(Number(c.commitTimestamp) * 1000).toISOString()}` : "rebuilt text does not hash to strategyHash")) return { verdict: "mismatch", steps, headline: "The graded rules are not the locked rules." };
+  if (!add("Rules were locked before the window", okRules, okRules ? `${src}; hashes to strategyHash; locked at ${new Date(Number(c.commitTimestamp) * 1000).toISOString()}` : `${src}; does not hash to strategyHash`)) return { verdict: "mismatch", steps, headline: "The graded rules are not the locked rules." };
   const lockTs = Number(c.commitTimestamp), endTs = Number(c.windowEnd);
   if (data.lockTs !== lockTs || data.windowEnd !== endTs) { add("Window matches the chain", false, `data ${data.lockTs}-${data.windowEnd} vs chain ${lockTs}-${endTs}`); return { verdict: "mismatch", steps, headline: "Attested window differs from the on-chain window." }; }
 
-  const mine = await gradeTemplate(data.spec, lockTs, endTs, candles);
+  const mine = await gradeTemplate(spec, lockTs, endTs, candles);
   add("Re-ran the engine on Coinbase 1-hour candles", true, `${TEMPLATE_ENGINE}: ${summaryLine(mine)}`);
   if (mine.result !== data.result) { add("Result", false, `${mine.result} vs attested ${data.result}`); return { verdict: "mismatch", steps, headline: "Different result." }; }
+  if (mine.result !== "GRADED") {
+    const okv = add("VOID for the same reason", mine.reason === data.reason, `${mine.reason}${mine.reason === data.reason ? "" : ` vs attested ${data.reason}`}`);
+    return { verdict: okv ? "match" : "mismatch", steps, headline: okv ? `Certificate #${certId} reproduced: VOID (${mine.reason}).` : `Certificate #${certId}: VOID for a different reason.` };
+  }
   const diffs = [];
   for (const k of NUM) if (data[k] != null && Math.abs(Number(mine[k]) - Number(data[k])) > 1e-4 * Math.max(1, Math.abs(Number(data[k])))) diffs.push(`${k}: ${mine[k]} vs ${data[k]}`);
   for (const k of INT) if (data[k] != null && Number(mine[k]) !== Number(data[k])) diffs.push(`${k}: ${mine[k]} vs ${data[k]}`);
@@ -97,7 +110,9 @@ async function main() {
   if (!commitmentId && !certId) { console.log("Usage: node rerun.mjs --commitment <id> | --cert <id> [--rpc <url>] [--json]"); process.exit(2); }
   const rpc = arg("--rpc") || process.env.AEVUM_RPC_URL || DEFAULT_RPC;
   try {
-    const r = await rerun({ commitmentId, certId, read: chainReader(rpc), candles: (s, x, y) => coinbaseHourly(s, x, y) });
+    const tf = arg("--text-file");
+    const lockedText = tf ? (await import("node:fs")).readFileSync(tf, "utf8") : async (h) => { try { const r = await fetch(`https://app.aevumprotocol.io/api/record?hashes=${h}`); return (await r.json())?.calls?.[h]?.text || null; } catch { return null; } };
+    const r = await rerun({ commitmentId, certId, read: chainReader(rpc), candles: (s, x, y) => coinbaseHourly(s, x, y), lockedText });
     if (a.includes("--json")) console.log(JSON.stringify(r, null, 2));
     else { for (const s of r.steps) console.log(`${s.ok ? "✓" : "✗"} ${s.label}: ${s.detail}`); console.log(`\n${r.verdict.toUpperCase()}: ${r.headline}`); }
     process.exit(r.verdict === "match" ? 0 : r.verdict === "mismatch" ? 1 : 2);
