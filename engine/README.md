@@ -12,6 +12,8 @@ node rerun.mjs --cert 13          # or: node rerun.mjs --commitment 18
 
 Optional: `--rpc <your Ethereum mainnet RPC URL>` (or env `AEVUM_RPC_URL`; a public RPC is used by default), `--json` for machine-readable output. Node 18+.
 
+VOID results (for example too many hours without candles) older than Nov 21, 2026 don't carry the strategy spec in their on-chain data. For those the script fetches the locked text from Aevum's public lookup, or you pass it yourself with `--text-file <path>`; either way it must hash to the on-chain `strategyHash`, so the lookup can't change the answer. Newer VOID results carry the spec on-chain.
+
 It uses no Aevum server. Step by step:
 
 1. Reads the commitment and certificate from the Aevum VBO v2 contract on Ethereum mainnet (`0xEd3309a515CA607c4687f096D6E60E639e03D793`).
@@ -37,5 +39,6 @@ Documented at the top of `strategyTemplates.js`. In short:
 - `executionTerms.js`: the locked execution terms block every strategy lock ends with.
 - `rerun.mjs`: the re-run script.
 - `rerun.test.mjs` + `fixture-commitment-18.json`: offline test (`npm test`): certificate #13's on-chain fingerprints, plus checks that an inflated return, different rules or edited data are caught.
+- `scale.test.mjs`: 300 random certificates across all three templates, coins, 7-30 day windows, costs and missing-candle VOIDs: every one must reproduce, and a tampered metric in each must be caught.
 
 MIT licensed, like the rest of this repo. A certificate shows what a locked strategy did over its window; it is not investment advice or a promise about future results.
