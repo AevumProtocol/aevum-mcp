@@ -17,7 +17,7 @@
  *      i.e. these are the rules that were fixed BEFORE the window opened.
  *   4. Downloads Coinbase public 1-hour candles and runs the same engine (strategyTemplates.js in this folder)
  *      over the same window, then compares every metric with what Aevum attested.
- * Exit code 0 = match, 1 = mismatch, 2 = could not check.
+ * Exit code 0 = match, 1 = mismatch, 2 = could not check, 3 = not a template certificate (use the website Re-check), 4 = not found.
  */
 import { ethers } from "ethers";
 import { composeTemplate, parseTemplate, gradeTemplate, summaryLine, TEMPLATE_ENGINE } from "./strategyTemplates.js";
@@ -55,19 +55,26 @@ export async function coinbaseHourly(sym, start, end, fetchImpl = fetch) {
 export async function rerun({ commitmentId, certId, read, candles, lockedText }) {
   const steps = []; const add = (label, ok, detail) => { steps.push({ label, ok, detail }); return ok; };
   let cert, c;
-  if (certId) { cert = await read.certificate(certId); commitmentId = Number(cert.commitmentId); }
+  if (certId) {
+    cert = await read.certificate(certId);
+    if (!Number(cert.id ?? certId) || !Number(cert.commitmentId)) return { verdict: "not_found", steps, headline: `Certificate #${certId} does not exist yet.` };
+    commitmentId = Number(cert.commitmentId);
+  }
   c = await read.commitment(commitmentId);
-  if (!certId) { certId = Number(c.certificateId); if (!certId) return { verdict: "error", steps, headline: `Commitment #${commitmentId} has no certificate yet (still running or not graded).` }; cert = await read.certificate(certId); }
+  if (!certId) { certId = Number(c.certificateId); if (!certId) return { verdict: "not_found", steps, headline: `Commitment #${commitmentId} has no certificate yet (still running, not graded, or does not exist).` }; cert = await read.certificate(certId); }
   add("Read from Ethereum", true, `commitment #${commitmentId}, certificate #${certId}, contract ${VBO}`);
   if (cert.revoked) return { verdict: "error", steps, headline: "This certificate was revoked." };
   if (String(cert.strategyHash).toLowerCase() !== String(c.strategyHash).toLowerCase()) { add("Certificate belongs to the commitment", false, "strategyHash differs"); return { verdict: "mismatch", steps, headline: "Certificate and commitment do not match." }; }
 
   const { text, dataRaw } = splitNote(cert.attestationNote);
-  if (!dataRaw) return { verdict: "error", steps, headline: "No results data in the attestation note (not a strategy-template certificate)." };
+  if (!dataRaw) return { verdict: "other_kind", steps, headline: `Certificate #${certId} is not a strategy template (it is an earlier market call or strategy certificate). Re-check it with the Re-check button on app.aevumprotocol.io/certificate/${certId} or the MCP tool recheck_certificate.` };
   const okData = ethers.keccak256(ethers.toUtf8Bytes(dataRaw)).toLowerCase() === String(cert.resultsHash).toLowerCase();
   if (!add("Results data matches the on-chain resultsHash", okData, okData ? "keccak256(data) = resultsHash" : "the note's data does not hash to resultsHash")) return { verdict: "mismatch", steps, headline: "Attested data does not match its fingerprint." };
   const data = JSON.parse(dataRaw);
-  if (data.type !== "aevum-strategy-template-result-v1") return { verdict: "error", steps, headline: `Not a strategy-template certificate (type ${data.type}).` };
+  if (data.type !== "aevum-strategy-template-result-v1") {
+    const kind = /market-call/.test(data.type) ? "a market call" : /fills/.test(data.type) ? "a strategy graded on real exchange fills" : /range/.test(data.type) ? "a range forecast" : `type ${data.type}`;
+    return { verdict: "other_kind", steps, headline: `Certificate #${certId} is ${kind}, not a strategy template. Re-check it with the Re-check button on app.aevumprotocol.io/certificate/${certId} or the MCP tool recheck_certificate.` };
+  }
 
   // The rules: rebuilt from the spec in the attested data (GRADED results carry it). VOID results don't, so the locked
   // text is needed: --text-file, or Aevum's public locked-text lookup. Either way it must hash to the on-chain strategyHash.
@@ -114,8 +121,12 @@ async function main() {
     const lockedText = tf ? (await import("node:fs")).readFileSync(tf, "utf8") : async (h) => { try { const r = await fetch(`https://app.aevumprotocol.io/api/record?hashes=${h}`); return (await r.json())?.calls?.[h]?.text || null; } catch { return null; } };
     const r = await rerun({ commitmentId, certId, read: chainReader(rpc), candles: (s, x, y) => coinbaseHourly(s, x, y), lockedText });
     if (a.includes("--json")) console.log(JSON.stringify(r, null, 2));
-    else { for (const s of r.steps) console.log(`${s.ok ? "✓" : "✗"} ${s.label}: ${s.detail}`); console.log(`\n${r.verdict.toUpperCase()}: ${r.headline}`); }
-    process.exit(r.verdict === "match" ? 0 : r.verdict === "mismatch" ? 1 : 2);
+    else {
+      for (const s of r.steps) console.log(`${s.ok ? "✓" : "✗"} ${s.label}: ${s.detail}`);
+      const label = { match: "MATCH", mismatch: "MISMATCH", other_kind: "SKIPPED (not a template)", not_found: "NOT FOUND" }[r.verdict] || "COULD NOT CHECK";
+      console.log(`\n${label}: ${r.headline}`);
+    }
+    process.exit({ match: 0, mismatch: 1, other_kind: 3, not_found: 4 }[r.verdict] ?? 2);
   } catch (e) { console.error("Could not check:", e.message); process.exit(2); }
 }
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("rerun.mjs")) main();

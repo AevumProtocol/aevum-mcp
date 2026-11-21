@@ -21,7 +21,7 @@ It uses no Aevum server. Step by step:
 3. Rebuilds the exact locked text from the strategy spec and checks it against the on-chain `strategyHash`: the rules graded are the rules locked before the window opened.
 4. Downloads Coinbase public 1-hour candles, runs `strategyTemplates.js` over the same window and compares every metric (net return, benchmark, excess return, max drawdown, Sharpe, trades, time in market, turnover) with what Aevum attested.
 
-Exit code `0` = match, `1` = mismatch, `2` = could not check.
+Exit code `0` = match, `1` = mismatch, `2` = could not check, `3` = not a strategy-template certificate (market calls and other kinds: use the Re-check button on the certificate page or the MCP tool `recheck_certificate`), `4` = not found.
 
 ## How the engine works
 

@@ -37,4 +37,10 @@ assert.equal(out.verdict, "mismatch", "grading different rules than the locked o
 const bad = mk(); const cc = await bad.certificate(); cc.attestationNote = cc.attestationNote.replace('"trades":', '"trades" :');
 out = await rerun({ commitmentId: 99, read: { commitment: bad.commitment, certificate: async () => cc }, candles });
 assert.equal(out.verdict, "mismatch", "edited attestation data is caught");
+// other kinds and missing ids are reported plainly, not as errors
+const other = async () => ({ commitmentId: 5n, strategyHash, resultsHash: ethers.keccak256(ethers.toUtf8Bytes('{"type":"aevum-market-call-result-v2"}')), returnBps: 0n, attestationNote: 'Market call: WRONG. DATA {"type":"aevum-market-call-result-v2"}', revoked: false, id: 8n });
+out = await rerun({ certId: 8, read: { certificate: other, commitment: async () => ({ strategyHash, commitTimestamp: 1n, windowEnd: 2n, certificateId: 8n }) }, candles });
+assert.equal(out.verdict, "other_kind"); assert.match(out.headline, /market call/);
+out = await rerun({ certId: 99, read: { certificate: async () => ({ id: 0n, commitmentId: 0n }), commitment: async () => ({}) }, candles });
+assert.equal(out.verdict, "not_found");
 console.log("rerun: all checks passed (real #13 fingerprints + synthetic match/mismatch)");
