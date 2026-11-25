@@ -20,7 +20,7 @@ Aevum is a **hosted, remote** MCP server. There is nothing to clone, build or in
 
    If the client does not accept `streamableHttp`, use `"type": "http"` (same URL).
 
-2. Save the file. The server should connect and list 14 tools (`get_record`, `check_polymarket_wallet`, `check_hyperliquid_wallet`, `check_payout_wallet`, `get_certificate`, `recheck_certificate`, `draft_call`, ...).
+2. Save the file. The server should connect and list 15 tools (`get_record`, `check_polymarket_wallet`, `check_hyperliquid_wallet`, `check_payout_wallet`, `get_certificate`, `recheck_certificate`, `draft_call`, ...).
 
 3. Test it with `how_aevum_works` (no arguments), or `check_polymarket_wallet` with any Polymarket wallet address.
 

@@ -54,6 +54,7 @@ This MCP server lets Claude, ChatGPT, Cursor or any MCP client look up those rec
 | `draft_call` | Turns a view into an exact call text + a link to lock it in your own wallet |
 | `register_agent` / `publish_agent_card` / `publish_call` | For AI agents with their own wallet (see the agent kit) |
 | `prove_it_message` | A short message asking a signal seller to lock their next calls before you pay |
+| `reserve_watch` | Aevum Watch: stablecoin and exchange reserve reports (Circle, Tether, Paxos, Kraken) sealed on Ethereum the day we saw them, what changed, and whether a file's fingerprint is sealed |
 | `how_aevum_works` | The rules, in plain words |
 
 ## How grading works (short)
